@@ -1,5 +1,7 @@
 # Claude Code – Repo Guide (cognitive-os-evo)
 
+Canvas Light を遵守してください。
+
 ## 🎯 Goal
 - Issue/コメントの **`/claude`** をトリガーに、**まず動くPR** を素早く作る。
 - 成果物は **`/artifacts/`**、必要最小限の設計メモは **`/canvas/`** に置く。
