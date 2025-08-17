@@ -1,0 +1,25 @@
+name: Claude Code PR Bot
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run-claude:
+    # コメント本文に /claude が含まれる時だけ走る
+    if: contains(github.event.comment.body, '/claude')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Claude Code
+        uses: anthropic/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Claude への指示書
+          instructions_path: .github/CLAUDE.md
