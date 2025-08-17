@@ -1,12 +1,24 @@
-name: Claude Code PR Bot
+name: Claude Code Test Bot
 
 on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   test-bot:
-    if: contains(github.event.comment.body, '/claude')
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Claude bot triggered!"
+      - name: Debug - Print comment info
+        run: |
+          echo "Bot triggered!"
+          echo "Comment body: ${{ github.event.comment.body }}"
+          echo "Comment user: ${{ github.event.comment.user.login }}"
+          echo "Issue number: ${{ github.event.issue.number }}"
+      
+      - name: Check if claude command
+        if: contains(github.event.comment.body, '/claude')
+        run: echo "Claude command detected in comment!"
