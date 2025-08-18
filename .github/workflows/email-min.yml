@@ -1,0 +1,43 @@
+name: email-min (SAFE dummy)
+
+on:
+  workflow_dispatch:
+    inputs:
+      subject:
+        description: "Email subject"
+        required: true
+        default: "Test run"
+      to:
+        description: "Recipient address (optional)"
+        required: false
+        default: "recipient@example.com"
+      body:
+        description: "Email body (optional)"
+        required: false
+        default: "Hello from SAFE dummy run."
+
+permissions:
+  contents: read
+
+env:
+  EMAIL_FROM: ${{ secrets.EMAIL_FROM || 'no-reply@example.com' }}
+  EMAIL_TO_DEFAULT: ${{ secrets.EMAIL_TO_DEFAULT || 'recipient@example.com' }}
+  EMAIL_DRY_RUN: 'true'
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate dummy email (.eml) to reports/outbox
+        run: |
+          bash scripts/email_dummy_send.sh \
+            --from "${EMAIL_FROM}" \
+            --to "${{ github.event.inputs.to || env.EMAIL_TO_DEFAULT }}" \
+            --subject "${{ github.event.inputs.subject }}" \
+            --body "${{ github.event.inputs.body }}"
+      - name: Upload outbox artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: outbox
+          path: reports/outbox/*.eml
