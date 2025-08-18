@@ -1,0 +1,57 @@
+name: Minimal Email via SMTP
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      to:       { description: "宛先（省略時はデフォルト）", required: false }
+      subject:  { description: "件名", required: false, default: "Cognitive OS Evo: Email Smoke Test" }
+      message:  { description: "本文", required: false, default: "This is a dispatch test." }
+permissions:
+  contents: read
+jobs:
+  send:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.comment.body, '/email')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare variables
+        id: prep
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TO="${{ inputs.to }}"
+            SUBJECT="${{ inputs.subject }}"
+            MSG="${{ inputs.message }}"
+          else
+            RAW=$(cat <<'EOT'
+${{ github.event.comment.body }}
+EOT
+)
+            SUBJECT="Cognitive OS Evo: Email from issue #${{ github.event.issue.number }}"
+            MSG="$(printf "%s" "$RAW" | sed -E '1s|^/email[[:space:]]*||')"
+          fi
+          if [ -z "$TO" ]; then TO="${{ secrets.EMAIL_TO_DEFAULT }}"; fi
+          {
+            echo "to=$TO"
+            echo "subject=$SUBJECT"
+            echo "msg<<EOF"
+            echo "$MSG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: Send mail (SMTP)
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port:   ${{ secrets.SMTP_PORT }}   # Gmail推奨: 465
+          username:      ${{ secrets.SMTP_USERNAME }}
+          password:      ${{ secrets.SMTP_PASSWORD }}
+          subject:       ${{ steps.prep.outputs.subject }}
+          from:          ${{ secrets.EMAIL_FROM }}
+          to:            ${{ steps.prep.outputs.to }}
+          secure:        true                       # 587なら false に変更
+          html_body: |
+            <p>Trigger: <code>${{ github.event_name }}</code></p>
+            <p>Repo: <code>${{ github.repository }}</code></p>
+            <p>Actor: <code>${{ github.actor }}</code></p>
+            <p>Message:</p>
+            <pre style="white-space:pre-wrap;">${{ steps.prep.outputs.msg }}</pre>
